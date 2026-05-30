@@ -1,0 +1,19 @@
+node_modules/
+coverage/
+*.log
+.DS_Store
+
+# Native build artifacts
+android/build/
+android/app/build/
+android/.gradle/
+ios/Pods/
+ios/build/
+*.xcworkspace/xcuserdata/
+
+# Model binaries — fetched at build time, not committed (see assets/README_MODELS.md)
+*.tflite
+
+# Local env / secrets
+.env
+.env.local

@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "preserve",
+    "lib": [
+      "ES2019",
+      "DOM"
+    ],
+    "jsx": "react-native",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@core/*": [
+        "./src/core/*"
+      ],
+      "@liveness/*": [
+        "./src/liveness/*"
+      ],
+      "@storage/*": [
+        "./src/storage/*"
+      ],
+      "@sync/*": [
+        "./src/sync/*"
+      ],
+      "@native/*": [
+        "./src/native/*"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "__tests__",
+    "benchmarks",
+    "demo"
+  ],
+  "exclude": [
+    "node_modules",
+    "android",
+    "ios"
+  ],
+  "extends": "expo/tsconfig.base"
+}

@@ -1,0 +1,41 @@
+{
+  "name": "datalake-faceauth",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline facial recognition & liveness detection module for Datalake 3.0 (Hackathon 7.0)",
+  "license": "MIT",
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "bench": "ts-node benchmarks/runBenchmarks.ts",
+    "demo": "ts-node demo/offlineDemo.ts"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^1.23.1",
+    "@react-native-community/netinfo": "^11.3.1",
+    "expo": "^56.0.8",
+    "react": "18.2.0",
+    "react-native": "0.74.1",
+    "react-native-vision-camera": "^4.0.0",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-typescript": "^7.24.0",
+    "@types/jest": "^29.5.12",
+    "@types/react": "^18.2.6",
+    "jest": "^29.7.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
