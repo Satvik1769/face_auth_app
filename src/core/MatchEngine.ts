@@ -3,7 +3,7 @@
  * No external library; single dot product of two 128-element arrays.
  * Target latency < 5 ms (TRD §9.1).
  */
-import { Embedding, MatchResult } from './types';
+import { Embedding, EnrollmentRecord, MatchResult } from './types';
 import { cosineSimilarity, isValidEmbedding } from './embeddingMath';
 
 /** Default match threshold (TRD §3.4 / OQ-02): 0.85 balances FAR < 1% and FRR < 5%. */
@@ -59,5 +59,23 @@ export class MatchEngine {
       if (score > best) best = score;
     }
     return { score: best, isMatch: best >= this.threshold, threshold: this.threshold };
+  }
+
+  /**
+   * Scan all enrolled users and return the best-matching one above threshold.
+   * Returns null if no enrollment exists or none clears the threshold.
+   */
+  identifyBest(live: Embedding, enrollments: EnrollmentRecord[]): (MatchResult & { userId: string }) | null {
+    let bestUserId: string | null = null;
+    let bestScore = -Infinity;
+    for (const rec of enrollments) {
+      const { score } = this.compareBest(live, rec.templates);
+      if (score > bestScore) {
+        bestScore = score;
+        bestUserId = rec.user_id;
+      }
+    }
+    if (bestUserId === null || bestScore < this.threshold) return null;
+    return { userId: bestUserId, score: bestScore, isMatch: true, threshold: this.threshold };
   }
 }

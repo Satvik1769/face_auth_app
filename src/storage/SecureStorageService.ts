@@ -12,6 +12,7 @@ import { isValidEmbedding } from '../core/embeddingMath';
 export interface ISecureStorage {
   saveEnrollment(userId: string, templates: Embedding[], nowIso: string): Promise<void>;
   getEnrollment(userId: string): Promise<EnrollmentRecord | null>;
+  listEnrollments(): Promise<EnrollmentRecord[]>;
   deleteEnrollment(userId: string): Promise<void>;
 
   writeAuthLog(log: Omit<AuthLogEntry, 'synced_to_aws'>): Promise<string>;
@@ -50,6 +51,13 @@ export class InMemorySecureStorage implements ISecureStorage {
   async getEnrollment(userId: string): Promise<EnrollmentRecord | null> {
     const rec = this.enrollments.get(userId);
     return rec ? { ...rec, templates: rec.templates.map((t) => [...t]) } : null;
+  }
+
+  async listEnrollments(): Promise<EnrollmentRecord[]> {
+    return [...this.enrollments.values()].map((r) => ({
+      ...r,
+      templates: r.templates.map((t) => [...t]),
+    }));
   }
 
   async deleteEnrollment(userId: string): Promise<void> {

@@ -22,16 +22,17 @@ export interface OrchestratorDeps {
   embedding: IEmbedding;
   storage: ISecureStorage;
   match: MatchEngine;
-  userId: string;
   nowIso: () => string;
   uuid: () => string;
   onStateChange?: (state: AuthState, context: AuthContext) => void;
+  onUserIdentified?: (userId: string) => void;
   triggerSync?: () => void; // fire-and-forget; never blocks unlock (TRD §2.4 step 11)
 }
 
 export class AuthOrchestrator {
   private state: AuthState = 'IDLE';
   private context: AuthContext;
+  private resolvedUserId: string | null = null;
 
   constructor(private readonly deps: OrchestratorDeps) {
     this.context = initialContext({ matchThreshold: deps.match.getThreshold() });
@@ -42,6 +43,9 @@ export class AuthOrchestrator {
   }
   getContext(): AuthContext {
     return { ...this.context };
+  }
+  getResolvedUserId(): string | null {
+    return this.resolvedUserId;
   }
 
   /** Apply an event and notify subscribers. */
@@ -69,14 +73,16 @@ export class AuthOrchestrator {
       const { embedding } = await this.deps.embedding.generateEmbedding(liveFrame);
       this.dispatch({ type: 'EMBEDDING_GENERATED' });
 
-      const enrolled = await this.deps.storage.getEnrollment(this.deps.userId);
-      if (!enrolled) {
-        this.dispatch({ type: 'MATCH_COMPUTED', score: 0 });
+      const allEnrollments = await this.deps.storage.listEnrollments();
+      const match = this.deps.match.identifyBest(embedding, allEnrollments);
+      if (match) {
+        this.resolvedUserId = match.userId;
+        this.deps.onUserIdentified?.(match.userId);
+        score = match.score;
+        this.dispatch({ type: 'MATCH_COMPUTED', score: match.score });
       } else {
-        const result = this.deps.match.compareBest(embedding, enrolled.templates);
-        score = result.score;
-        this.dispatch({ type: 'MATCH_COMPUTED', score: result.score });
-        if (!result.isMatch) failure = 'low_score';
+        failure = 'low_score';
+        this.dispatch({ type: 'MATCH_COMPUTED', score: 0 });
       }
     } catch {
       failure = 'error';
@@ -100,7 +106,7 @@ export class AuthOrchestrator {
       this.state === 'AUTH_SUCCESS' ? 'success' : this.state === 'FALLBACK_PIN' ? 'fallback' : 'fail';
     const log: Omit<AuthLogEntry, 'synced_to_aws'> = {
       log_id: this.deps.uuid(),
-      user_id: this.deps.userId,
+      user_id: this.resolvedUserId ?? 'unknown',
       attempted_at: this.deps.nowIso(),
       result,
       match_score: score,

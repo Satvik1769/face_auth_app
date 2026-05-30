@@ -20,6 +20,7 @@ import { ISecureStorage } from '../storage/SecureStorageService';
 export interface FaceAuthContextValue {
   state: AuthState;
   context: AuthContext;
+  resolvedUserId: string | null;
   usingMock: boolean;
   orchestrator: AuthOrchestrator;
   enrollment: EnrollmentService;
@@ -29,7 +30,6 @@ export interface FaceAuthContextValue {
 const Ctx = createContext<FaceAuthContextValue | null>(null);
 
 export interface FaceAuthProviderProps {
-  userId: string;
   storage: ISecureStorage;
   /** Inject the native bcrypt-backed hasher on device; defaults to PBKDF2 reference. */
   pinHasher?: PinHasher;
@@ -40,7 +40,6 @@ export interface FaceAuthProviderProps {
 }
 
 export const FaceAuthProvider: React.FC<FaceAuthProviderProps> = ({
-  userId,
   storage,
   pinHasher,
   nowIso = () => new Date().toISOString(),
@@ -53,6 +52,7 @@ export const FaceAuthProvider: React.FC<FaceAuthProviderProps> = ({
 
   const [state, setState] = useState<AuthState>('IDLE');
   const [context, setContext] = useState<AuthContext>(() => ({} as AuthContext));
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
 
   const orchestrator = useMemo(
     () =>
@@ -60,7 +60,6 @@ export const FaceAuthProvider: React.FC<FaceAuthProviderProps> = ({
         embedding: Embedding,
         storage,
         match,
-        userId,
         nowIso,
         uuid,
         triggerSync,
@@ -68,8 +67,9 @@ export const FaceAuthProvider: React.FC<FaceAuthProviderProps> = ({
           setState(s);
           setContext(c);
         },
+        onUserIdentified: (uid) => setResolvedUserId(uid),
       }),
-    [storage, match, userId, nowIso, uuid, triggerSync],
+    [storage, match, nowIso, uuid, triggerSync],
   );
 
   const enrollment = useMemo(
@@ -99,6 +99,7 @@ export const FaceAuthProvider: React.FC<FaceAuthProviderProps> = ({
   const value: FaceAuthContextValue = {
     state,
     context,
+    resolvedUserId,
     usingMock: isUsingMockInference(),
     orchestrator,
     enrollment,
