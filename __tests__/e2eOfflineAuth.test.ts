@@ -21,7 +21,6 @@ function setup() {
     embedding,
     storage,
     match,
-    userId: 'rizul',
     nowIso: () => ISO,
     uuid,
   });
@@ -56,7 +55,6 @@ describe('E2E offline auth', () => {
       embedding: new MockEmbedding(),
       storage,
       match: new MatchEngine(),
-      userId: 'rizul',
       nowIso: () => ISO,
       uuid,
     });
@@ -78,7 +76,6 @@ describe('E2E offline auth', () => {
       embedding: new MockEmbedding(),
       storage,
       match: new MatchEngine(),
-      userId: 'rizul',
       nowIso: () => ISO,
       uuid,
     });

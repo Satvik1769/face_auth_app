@@ -25,7 +25,7 @@ export default function App(): React.JSX.Element {
   const [route, setRoute] = useState<Route>('enroll');
 
   return (
-    <FaceAuthProvider userId={USER_ID} storage={storage}>
+    <FaceAuthProvider storage={storage}>
       <SafeAreaView style={styles.root}>
         {route === 'enroll' && (
           <EnrollmentScreen userId={USER_ID} onDone={() => setRoute('pin-setup')} />
