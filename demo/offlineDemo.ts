@@ -84,7 +84,6 @@ async function main() {
     embedding,
     storage,
     match,
-    userId: USER,
     nowIso: () => ISO,
     uuid,
     triggerSync: () => syncManager.requestSync(),
@@ -121,7 +120,7 @@ async function main() {
 
   // 5. Three failures → PIN fallback ----------------------------------------------
   step(5, 'Three failed face attempts → PIN fallback → lockout safety');
-  const o2 = new AuthOrchestrator({ embedding, storage, match, userId: USER, nowIso: () => ISO, uuid });
+  const o2 = new AuthOrchestrator({ embedding, storage, match, nowIso: () => ISO, uuid });
   o2.dispatch({ type: 'APP_FOREGROUND' });
   o2.dispatch({ type: 'CAMERA_READY' });
   for (let i = 0; i < 3; i++) {
