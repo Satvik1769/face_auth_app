@@ -19,6 +19,11 @@ export interface WipeCommand {
 
 export const MAX_LOG_BATCH = 100; // TRD §6.3 batch size cap
 
+export interface CredentialVerifyResult {
+  userId: string;
+  token: string;
+}
+
 export interface ISyncApi {
   /** POST /v1/faceauth/enrollments — upsert by (user_id, enrollment_version). */
   postEnrollment(payload: EnrollmentUpload): Promise<{ synced_at: string }>;
@@ -28,6 +33,10 @@ export interface ISyncApi {
   getWipeCommand(userId: string): Promise<WipeCommand>;
   /** POST /v1/faceauth/wipe-confirm */
   confirmWipe(userId: string): Promise<void>;
+  /** POST /auth/login — verify credentials against backend, returns userId + short-lived JWT. */
+  verifyCredentials(username: string, password: string): Promise<CredentialVerifyResult | null>;
+  /** GET /enrollments/:userId — pull stored face templates back to device (restore after reinstall). */
+  pullEnrollment(userId: string, token: string): Promise<{ templates: number[][] } | null>;
 }
 
 /** Supplies a fresh short-lived Cognito JWT before each sync session (TRD §6.1). */
@@ -101,5 +110,39 @@ export class HttpSyncApi implements ISyncApi {
 
   async confirmWipe(userId: string): Promise<void> {
     await this.request('/wipe-confirm', 'POST', { user_id: userId });
+  }
+
+  async verifyCredentials(username: string, password: string): Promise<CredentialVerifyResult | null> {
+    try {
+      const res = await this.fetchImpl(`${this.baseUrl}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async pullEnrollment(userId: string, token: string): Promise<{ templates: number[][] } | null> {
+    try {
+      const res = await this.fetchImpl(
+        `${this.baseUrl}/enrollments/${encodeURIComponent(userId)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (!res.ok) return null;
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    } catch {
+      return null;
+    }
   }
 }
