@@ -10,6 +10,7 @@ import { useFaceAuth } from '../../providers/FaceAuthProvider';
 import { Liveness } from '../../native';
 import { LivenessOverlay } from '../components/LivenessOverlay';
 import { PinFallbackScreen } from './PinFallbackScreen';
+import { CredentialLoginScreen } from './CredentialLoginScreen';
 
 const CHALLENGE_LABEL: Record<string, string> = {
   blink: 'Please blink',
@@ -61,6 +62,10 @@ export const FaceAuthScreen: React.FC<{ onUnlock: () => void; userId: string }> 
     },
     [orchestrator],
   );
+
+  if (state === 'CREDENTIAL_LOGIN') {
+    return <CredentialLoginScreen mode="fallback" onUnlock={onUnlock} />;
+  }
 
   if (state === 'FALLBACK_PIN' || state === 'LOCKED_OUT' || state === 'ERROR') {
     return <PinFallbackScreen onUnlock={onUnlock} userId={userId} />;

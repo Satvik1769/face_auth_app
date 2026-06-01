@@ -102,7 +102,7 @@ describe('AuthStateMachine — PIN lockout', () => {
     expect(r.context.retryCount).toBe(0);
   });
 
-  test('5 wrong PINs -> LOCKED_OUT, and lock clears after 30 min', () => {
+  test('5 wrong PINs -> LOCKED_OUT, timer expiry routes to CREDENTIAL_LOGIN', () => {
     let cur = { state: 'FALLBACK_PIN' as AuthState, context: initialContext() };
     for (let i = 0; i < 5; i++) {
       cur = transition(cur.state, cur.context, { type: 'PIN_SUBMITTED', correct: false });
@@ -119,10 +119,40 @@ describe('AuthStateMachine — PIN lockout', () => {
     cur = transition(cur.state, cur.context, { type: 'NOW', nowMs: 1_000 + LOCKOUT_MS - 1 });
     expect(cur.state).toBe('LOCKED_OUT');
 
-    // released at/after the deadline
+    // released at/after the deadline -> credential login (not PIN)
     cur = transition(cur.state, cur.context, { type: 'NOW', nowMs: 1_000 + LOCKOUT_MS });
-    expect(cur.state).toBe('FALLBACK_PIN');
+    expect(cur.state).toBe('CREDENTIAL_LOGIN');
     expect(cur.context.pinFailCount).toBe(0);
+  });
+
+  test('USE_PASSWORD skips the lockout timer and goes to CREDENTIAL_LOGIN', () => {
+    let cur = { state: 'FALLBACK_PIN' as AuthState, context: initialContext() };
+    for (let i = 0; i < 5; i++) {
+      cur = transition(cur.state, cur.context, { type: 'PIN_SUBMITTED', correct: false });
+    }
+    expect(cur.state).toBe('LOCKED_OUT');
+    cur = transition(cur.state, cur.context, { type: 'USE_PASSWORD' });
+    expect(cur.state).toBe('CREDENTIAL_LOGIN');
+    expect(cur.context.lockedUntilMs).toBeNull();
+  });
+
+  test('CREDENTIAL_SUCCESS resets all counters and unlocks', () => {
+    const cur = transition('CREDENTIAL_LOGIN', initialContext({ credentialFailCount: 1 }), {
+      type: 'CREDENTIAL_SUCCESS',
+    });
+    expect(cur.state).toBe('AUTH_SUCCESS');
+    expect(cur.context.credentialFailCount).toBe(0);
+    expect(cur.context.pinFailCount).toBe(0);
+    expect(cur.context.retryCount).toBe(0);
+  });
+
+  test('3 CREDENTIAL_FAILs re-lock', () => {
+    let cur = { state: 'CREDENTIAL_LOGIN' as AuthState, context: initialContext() };
+    for (let i = 0; i < 3; i++) {
+      cur = transition(cur.state, cur.context, { type: 'CREDENTIAL_FAIL' });
+    }
+    expect(cur.state).toBe('LOCKED_OUT');
+    expect(cur.context.credentialFailCount).toBe(0);
   });
 });
 

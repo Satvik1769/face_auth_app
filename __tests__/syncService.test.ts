@@ -36,6 +36,8 @@ class FakeApi implements ISyncApi {
   async confirmWipe() {
     this.confirmedWipe = true;
   }
+  async verifyCredentials() { return null; }
+  async pullEnrollment() { return null; }
 }
 
 const onlineNet = { isConnected: async () => true };

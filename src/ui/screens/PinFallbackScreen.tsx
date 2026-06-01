@@ -47,6 +47,9 @@ export const PinFallbackScreen: React.FC<{ onUnlock: () => void; userId: string 
       <View style={styles.center}>
         <Text style={styles.title}>Too many attempts</Text>
         <Text style={styles.muted}>Try again in about {mins} min</Text>
+        <Pressable style={styles.textButton} onPress={() => orchestrator.dispatch({ type: 'USE_PASSWORD' })}>
+          <Text style={styles.textButtonLabel}>Use password instead</Text>
+        </Pressable>
       </View>
     );
   }
@@ -95,4 +98,6 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   attempts: { color: '#555', marginTop: 24, fontSize: 12 },
+  textButton: { marginTop: 28 },
+  textButtonLabel: { color: '#2a9d8f', fontSize: 15, fontWeight: '500' },
 });

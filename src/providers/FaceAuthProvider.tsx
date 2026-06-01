@@ -13,6 +13,7 @@ import { Embedding, FaceDetector, isUsingMockInference } from '../native';
 import { loadConfig } from '../config/env';
 import { PinService } from '../security/PinService';
 import { PinHasher, Pbkdf2PinHasher } from '../security/PinHasher';
+import { CredentialService } from '../security/CredentialService';
 
 // The on-device build injects NativeSecureStorage here; see src/native/secureStorageBridge.
 import { ISecureStorage } from '../storage/SecureStorageService';
@@ -25,6 +26,7 @@ export interface FaceAuthContextValue {
   orchestrator: AuthOrchestrator;
   enrollment: EnrollmentService;
   pin: PinService;
+  credentials: CredentialService;
 }
 
 const Ctx = createContext<FaceAuthContextValue | null>(null);
@@ -82,6 +84,11 @@ export const FaceAuthProvider: React.FC<FaceAuthProviderProps> = ({
     [storage, pinHasher],
   );
 
+  const credentials = useMemo(
+    () => new CredentialService(storage, pinHasher ?? new Pbkdf2PinHasher()),
+    [storage, pinHasher],
+  );
+
   // Kick the state machine on foreground (TRD §7.2 IDLE -> CAMERA_STARTING).
   const appState = useRef(AppState.currentState);
   useEffect(() => {
@@ -104,6 +111,7 @@ export const FaceAuthProvider: React.FC<FaceAuthProviderProps> = ({
     orchestrator,
     enrollment,
     pin,
+    credentials,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 };

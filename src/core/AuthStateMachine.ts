@@ -18,20 +18,23 @@ export type AuthState =
   | 'AUTH_FAIL'
   | 'FALLBACK_PIN'
   | 'LOCKED_OUT'
+  | 'CREDENTIAL_LOGIN'
   | 'ENROLLING'
   | 'ERROR';
 
-export const MAX_FACE_RETRIES = 3; // TRD §7.2: fallback after 3 consecutive failures
-export const MAX_PIN_FAILURES = 5; // TRD §7.2: lockout after 5 PIN failures
-export const LOCKOUT_MS = 30 * 60 * 1000; // 30 minutes (TRD §7.1 LOCKED_OUT)
+export const MAX_FACE_RETRIES = 3;
+export const MAX_PIN_FAILURES = 5;
+export const MAX_CREDENTIAL_FAILURES = 3;
+export const LOCKOUT_MS = 30 * 60 * 1000;
 
 export interface AuthContext {
-  retryCount: number; // consecutive face-auth failures
-  pinFailCount: number; // consecutive PIN failures
+  retryCount: number;
+  pinFailCount: number;
+  credentialFailCount: number;
   matchThreshold: number;
   enrollmentExists: boolean;
   cameraPermission: boolean;
-  lockedUntilMs: number | null; // wall-clock ms; null when not locked
+  lockedUntilMs: number | null;
   lastScore: number | null;
 }
 
@@ -41,7 +44,7 @@ export type AuthEvent =
   | { type: 'MODEL_LOAD_FAILURE' }
   | { type: 'FACE_DETECTED'; confidence: number }
   | { type: 'LIVENESS_PASSED' }
-  | { type: 'LIVENESS_FAILED' } // timeout or failed gesture
+  | { type: 'LIVENESS_FAILED' }
   | { type: 'EMBEDDING_GENERATED' }
   | { type: 'EMBEDDING_ERROR' }
   | { type: 'MATCH_COMPUTED'; score: number }
@@ -49,7 +52,10 @@ export type AuthEvent =
   | { type: 'PIN_SUBMITTED'; correct: boolean }
   | { type: 'START_ENROLLMENT' }
   | { type: 'ENROLLMENT_DONE' }
-  | { type: 'NOW'; nowMs: number }; // clock tick to clear an expired lockout
+  | { type: 'NOW'; nowMs: number }
+  | { type: 'USE_PASSWORD' }
+  | { type: 'CREDENTIAL_SUCCESS' }
+  | { type: 'CREDENTIAL_FAIL' };
 
 export const FACE_CONFIDENCE_THRESHOLD = 0.75; // BlazeFace (TRD §3.1)
 
@@ -57,6 +63,7 @@ export function initialContext(overrides: Partial<AuthContext> = {}): AuthContex
   return {
     retryCount: 0,
     pinFailCount: 0,
+    credentialFailCount: 0,
     matchThreshold: DEFAULT_MATCH_THRESHOLD,
     enrollmentExists: true,
     cameraPermission: true,
@@ -168,8 +175,31 @@ export function transition(state: AuthState, context: AuthContext, event: AuthEv
           ctx.pinFailCount = 0;
           ctx.retryCount = 0;
           ctx.lockedUntilMs = null;
-          return { state: 'FALLBACK_PIN', context: ctx };
+          return { state: 'CREDENTIAL_LOGIN', context: ctx };
         }
+      }
+      if (event.type === 'USE_PASSWORD') {
+        ctx.lockedUntilMs = null;
+        return { state: 'CREDENTIAL_LOGIN', context: ctx };
+      }
+      break;
+
+    case 'CREDENTIAL_LOGIN':
+      if (event.type === 'CREDENTIAL_SUCCESS') {
+        ctx.pinFailCount = 0;
+        ctx.retryCount = 0;
+        ctx.credentialFailCount = 0;
+        ctx.lockedUntilMs = null;
+        return { state: 'AUTH_SUCCESS', context: ctx };
+      }
+      if (event.type === 'CREDENTIAL_FAIL') {
+        ctx.credentialFailCount += 1;
+        if (ctx.credentialFailCount >= MAX_CREDENTIAL_FAILURES) {
+          ctx.credentialFailCount = 0;
+          ctx.lockedUntilMs = null;
+          return { state: 'LOCKED_OUT', context: ctx };
+        }
+        return { state: 'CREDENTIAL_LOGIN', context: ctx };
       }
       break;
 
