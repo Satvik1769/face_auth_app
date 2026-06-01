@@ -4,7 +4,15 @@
  * truth so the native layer and the JS layer agree on column names.
  */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+
+export const CREATE_USERS = `
+CREATE TABLE IF NOT EXISTS users (
+  user_id       TEXT PRIMARY KEY,
+  username      TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at    TEXT NOT NULL
+);`;
 
 export const CREATE_ENROLLMENTS = `
 CREATE TABLE IF NOT EXISTS enrollments (
@@ -38,7 +46,7 @@ export const CREATE_INDEXES = `
 CREATE INDEX IF NOT EXISTS idx_auth_logs_pending ON auth_logs (synced_to_aws);
 `;
 
-export const ALL_DDL = [CREATE_ENROLLMENTS, CREATE_AUTH_LOGS, CREATE_SYNC_META, CREATE_INDEXES];
+export const ALL_DDL = [CREATE_USERS, CREATE_ENROLLMENTS, CREATE_AUTH_LOGS, CREATE_SYNC_META, CREATE_INDEXES];
 
 /** float32 embedding <-> bytes helpers shared by native and JS layers. */
 export function embeddingToBytes(embedding: number[]): Uint8Array {

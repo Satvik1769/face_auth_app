@@ -25,6 +25,9 @@ export interface ISecureStorage {
 
   savePINHash(userId: string, hash: string): Promise<void>;
   getPINHash(userId: string): Promise<string | null>;
+
+  saveUserCredential(userId: string, username: string, passwordHash: string, nowIso: string): Promise<void>;
+  getUserByUsername(username: string): Promise<{ userId: string; passwordHash: string } | null>;
 }
 
 export class InMemorySecureStorage implements ISecureStorage {
@@ -32,6 +35,7 @@ export class InMemorySecureStorage implements ISecureStorage {
   private logs = new Map<string, AuthLogEntry>();
   private meta = new Map<string, { value: string; updated_at: string }>();
   private pinHashes = new Map<string, string>();
+  private usersByUsername = new Map<string, { userId: string; passwordHash: string }>();
 
   async saveEnrollment(userId: string, templates: Embedding[], nowIso: string): Promise<void> {
     if (templates.length === 0 || !templates.every(isValidEmbedding)) {
@@ -108,6 +112,14 @@ export class InMemorySecureStorage implements ISecureStorage {
 
   async getPINHash(userId: string): Promise<string | null> {
     return this.pinHashes.get(userId) ?? null;
+  }
+
+  async saveUserCredential(userId: string, username: string, passwordHash: string, _nowIso: string): Promise<void> {
+    this.usersByUsername.set(username, { userId, passwordHash });
+  }
+
+  async getUserByUsername(username: string): Promise<{ userId: string; passwordHash: string } | null> {
+    return this.usersByUsername.get(username) ?? null;
   }
 
   /** Test helper — total stored logs regardless of sync state. */

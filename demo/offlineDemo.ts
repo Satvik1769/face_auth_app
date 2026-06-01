@@ -51,6 +51,8 @@ class InMemoryAws implements ISyncApi {
   async confirmWipe() {
     this.assertOnline();
   }
+  async verifyCredentials() { return null; }
+  async pullEnrollment() { return null; }
   private assertOnline() {
     if (!this.online) throw new Error('network unavailable');
   }

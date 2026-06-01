@@ -94,6 +94,19 @@ export class AuthOrchestrator {
     return this.state;
   }
 
+  /** Authenticate via username + password after face/PIN lockout. */
+  async loginWithCredentials(userId: string): Promise<void> {
+    this.resolvedUserId = userId;
+    this.deps.onUserIdentified?.(userId);
+    this.dispatch({ type: 'CREDENTIAL_SUCCESS' });
+    this.deps.triggerSync?.();
+  }
+
+  /** Signal a failed credential attempt so the state machine can count and lock. */
+  failCredentials(): void {
+    this.dispatch({ type: 'CREDENTIAL_FAIL' });
+  }
+
   /** Liveness timed out / failed before any comparison. */
   async failLiveness(): Promise<AuthState> {
     this.dispatch({ type: 'LIVENESS_FAILED' });
